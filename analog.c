@@ -13,31 +13,67 @@ unsigned int analog_read(int i) {
     return low | (high << 8);
 }
 
-void analog_write_PORTB1(unsigned int v) {
+void analog_write_PORTD3(unsigned int v) {
+    set_high(DDRD, PORTD3);
+    TCCR2A = (1 << COM1A1) | (1 << COM2B1) | (1 << WGM21) | (1 << WGM20);
+    TCCR2B = 1 << CS20;
+
+    OCR2B = v & 0xff;
+}
+
+void analog_write_PORTD5(unsigned int v) {
+    set_high(DDRD, PORTD5);
+    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM01) | (1 << WGM00);
+    TCCR0B = 1 << CS00;
+
+    OCR0B = v & 0xff;
+}
+
+void analog_write_PORTD6(unsigned int v) {
+    set_high(DDRD, PORTD6);
+    TCCR0A = (1 << COM0A1) | (1 << COM0B1) | (1 << WGM01) | (1 << WGM00);
+    TCCR0B = 1 << CS00;
+
+    OCR0A = v & 0xff;
+}
+
+void analog_write_PORTB1_10bit(unsigned int v) {
     set_high(DDRB, PORTB1);
     TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11) | (1 << WGM10);
     TCCR1B = (1 << WGM12) | (1 << CS10);
 
-    v = v >= 1023? 1023: v;
-    OCR1A = v;
+    OCR1A = v & 0x3ff;
+}
 
-    /*set_high(TCCR1A, 7);
-    set_low(TCCR1A, 6);
-    set_high(TCCR1A, 5);
-    set_low(TCCR1A, 4);
-    set_low(TCCR1A, 3);
-    set_low(TCCR1A, 2);
-    set_high(TCCR1A, 1);
-    set_high(TCCR1A, 0);*/
+void analog_write_PORTB1(unsigned int v) {
+    set_high(DDRB, PORTB1);
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) /*| (1 << WGM11)*/ | (1 << WGM10);
+    TCCR1B = (1 << WGM12) | (1 << CS10);
 
+    OCR1A = v & 0xff;
+}
 
-    /*set_low(TCCR1B, 7);
-    set_low(TCCR1B, 6);
-    set_low(TCCR1B, 5);
-    set_low(TCCR1B, 4);
-    set_high(TCCR1B, 3);
-    set_low(TCCR1B, 2);
-    set_low(TCCR1B, 1);
-    set_high(TCCR1B, 0);*/
+void analog_write_PORTB2_10bit(unsigned int v) {
+    set_high(DDRB, PORTB2);
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11) | (1 << WGM10);
+    TCCR1B = (1 << WGM12) | (1 << CS10);
+
+    OCR1B = v & 0x3ff;
+}
+
+void analog_write_PORTB2(unsigned int v) {
+    set_high(DDRB, PORTB2);
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) /*| (1 << WGM11) */| (1 << WGM10);
+    TCCR1B = (1 << WGM12) | (1 << CS10);
+
+    OCR1B = v & 0xff;
+}
+
+void analog_write_PORTB3(unsigned int v) {
+    set_high(DDRB, PORTB3);
+    TCCR2A = (1 << COM2A1) | (1 << COM1B1) | (1 << WGM21) | (1 << WGM20);
+    TCCR2B = 1 << CS20;
+
+    OCR2A = v & 0xff;
 }
 

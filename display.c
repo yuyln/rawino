@@ -26,10 +26,10 @@ int display_send(display *d, uint8_t value) {
 
     int err = (i2c_send(data) != 0) && (i2c_send(data & (~(1 << d->en))) != 0);
 
-    if (!err)
+    /*if (!err)
         set_high(PORTD, PORTD4);
     else
-        set_low(PORTD, PORTD4);
+        set_low(PORTD, PORTD4);*/
 
     return err;
 }
@@ -45,10 +45,10 @@ int display_send_(display d, uint8_t rs, uint8_t rw, uint8_t db7, uint8_t db6, u
                     ((db7 & 1) << d.db7);
 
     int err = (i2c_send(data) != 0) || (i2c_send(data & (~(1 << d.en))) != 0);
-    if (!err)
+    /*if (!err)
         set_high(PORTD, PORTD4);
     else
-        set_low(PORTD, PORTD4);
+        set_low(PORTD, PORTD4);*/
     return err;
 }
 
@@ -83,7 +83,7 @@ display display_init(uint8_t en, uint8_t backlight, uint8_t rs, uint8_t rw, uint
 int display_put_char(display d, uint8_t c) {
     int err = display_send_(d, 1, 0, (c >> 7) & 1, (c >> 6) & 1, (c >> 5) & 1, (c >> 4) & 1);
     err = err || display_send_(d, 1, 0, (c >> 3) & 1, (c >> 2) & 1, (c >> 1) & 1, (c >> 0) & 1);
-    _delay_ms(5);
+    _delay_us(50);
     return err;
 }
 
