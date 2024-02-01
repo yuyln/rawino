@@ -7,26 +7,6 @@
 #include "analog.c"
 #include "display.c"
 
-
-void light_pins(int v) {
-    int mask = v & 0x07;
-
-    if ((mask & (1 << 0)))
-        set_high(PORTD, 2);
-    else
-        set_low(PORTD, 2);
-
-    if ((mask & (1 << 1)))
-        set_high(PORTD, 3);
-    else
-        set_low(PORTD, 3);
-
-    if ((mask & (1 << 2)))
-        set_high(PORTD, 4);
-    else
-        set_low(PORTD, 4);
-}
-
 extern uint16_t __bss_end;    // __bss_end and __bss_start_ are the addresses (use &__bss_xx) of the .bss section on the memory.
 extern uint16_t __bss_start;  // This come from the linker, and the linker that says where this sections are localized.
                               //
