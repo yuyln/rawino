@@ -87,6 +87,13 @@ int display_put_char(display d, uint8_t c) {
     return err;
 }
 
+int display_put_cstr(display d, const char *s, unsigned int sz) {
+    int err = 0;
+    for (unsigned int i = 0; i < sz; ++i)
+        err = err || display_put_char(d, s[i]);
+    return err;
+}
+
 int display_cursor_right(display d, unsigned int amount) {
     int err = 0;
     for (unsigned int i = 0; i < amount; ++i) {

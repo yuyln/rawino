@@ -1,8 +1,12 @@
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "definitions.h"
 #include "i2c.c"
 #include "analog.c"
 #include "display.c"
+
 
 void light_pins(int v) {
     int mask = v & 0x07;
@@ -23,34 +27,114 @@ void light_pins(int v) {
         set_low(PORTD, 4);
 }
 
+extern uint16_t __bss_end;    // __bss_end and __bss_start_ are the addresses (use &__bss_xx) of the .bss section on the memory.
+extern uint16_t __bss_start;  // This come from the linker, and the linker that says where this sections are localized.
+                              //
+extern uint16_t __data_end;   // __data_end and __data_start are addresses (use &__data_xx) of the .data section on the memory.
+extern uint16_t __data_start; // Again, this come from the linker. IMPORTANT: This section marks the start of data memory.
+                              // Data memory is memory that our program touches directly.
+
+extern uint16_t __heap_end;   //Should be equal to __bss_end
+extern uint16_t __heap_start; //Should be equal to __bss_start
+                              //Use both of these only when using stdlib
+
+/*
+ * All information regarding memory can be seen on the chip datasheet.
+ * We are using an ATMega328P. From the datasheet (pages 17 and 18)
+ * |________________________________| (0x0000)
+ * |                                |
+ * |                                |
+ * |           Application          |
+ * |             Flash              |
+ * |            Section             |
+ * |                                |
+ * |                                |
+ * |________________________________|
+ * |                                |
+ * |             Boot Area          |
+ * |     (We do not touch this      |
+ * |      frequently, but can       |
+ * |      be touched if done        |
+ * |      the right way)            |
+ * |________________________________| (0x3fff)
+ *
+ * This is the entire memory layout. We use the Flash Section
+ * for registers, .data section, .bss section, heap(dynamic memory) and stack.
+ *
+ * The Flash Section (Data Memory) is divided following:
+ * |________________________________| (0x0000)
+ * |                                |
+ * |           32 Registers         |
+ * |________________________________| (0x0020 >)
+ * |                                |
+ * |         64 I/O Registers       |
+ * |________________________________| (0x0060 >)
+ * |                                |
+ * |      160 Ext I/O Registers     |
+ * |________________________________| (0x0100 >)
+ * |                                |
+ * |                                |
+ * |                                |
+ * |        Internal SRAM           |
+ * |                                |
+ * |                                |
+ * |                                |
+ * |                                |
+ * |________________________________| (0x08ff)
+ * 
+ * Our precious data lives on the Internal SRAM section.
+ * The section above are register sections. You can see
+ * that the registers addresses goes up to 0xff. If you
+ * go to the Register Summary on the datasheet, you will
+ * see that this is the range of all addresses on the device.
+ *
+ * The Internal SRAM is where the juicy stuff lives.
+ * This regions is divided into section: .data, .bss, and the rest.
+ * The .data section start at 0x0100 and all our program data lives
+ * there, (const char * for example). This section starts at __data_start location
+ * and ends on __data_end. Note, these are LOCATIONS, not addresses, you
+ * need to use &__data_xx to get the location correctly (and keep your sanity).
+ *
+ * The .bss section is where the static variables lives. Things
+ * such as global variables, static variables inside function, etc, lives
+ * here. This section starts at __bss_start and ends on __bss_end. Again, these
+ * are LOCATIONS, not addresses, so it is required to use &__bss_xx.
+ *
+ * Now, after __bss_end comes the memory that WE OWN. We can do (almost)
+ * whatever we want with this. BUT, there is a catch: The stack pointer
+ * starts at 0x08ff(location __stack, same deal as with __bss_xx and __data_xx),
+ * which is the end of the SRAM. From the datasheet, the
+ * stack pointer goes up, i.e., the stack pointer reduces it address and variables
+ * are pushed into it. This way, you have the space on SRAM starting at __bss_end
+ * up until the Stack Pointer. CAREFUL: DO NOT OVERWRITE THE STACK ON ANY CIRCUNSTANCE,
+ * THIS WILL FUCK UP EVERYTHING (if using the stack, obviusly).
+ *
+ * And there we go, this is the entire memory layout of the ATMega328P chip.
+ * On the file `symbols`, are a list of symbols used on the main program.
+ * There you will find __bss_start, __bss_end, __data_start, __data_end and __stack.
+ * Check their values and see that it matches what is said on the datasheet.
+ * On `symbols`
+ *
+ * OBS: ">" means that this address is exclusive, and belong to the next section.
+ *  So the section existis up until this address, from this address beyond
+ *  it is other region. This is different from what is on the datasheet, but
+ *  it is really easy to find the address on the datasheet, just
+ *  subtract 0x01 from the address(1 byte). For example, for going from
+ *  the 64 I/O Registers address used here, just subtract 0x01 from 0x0060,
+ *  which gives 0x005f, giving the addrees range [0x0020, 0x005F], equal
+ *  to the datasheet.
+ */
+
 int main(void) {
+    int test = 0;
     set_low(DDRD, 2);
-    /*set_high(DDRD, 4);
-      set_low(DDRD, 5);
-      set_low(DDRD, 6);
-    set_high(DDRD, 3);
-    set_high(DDRD, 2);*/
+    set_high(DDRD, 4);
     uint8_t display_addr = 0x4e;
     light_pins(0);
     
 
     _delay_ms(100);
     int err = i2c_start(display_addr);
-    /*if (err) {
-        if (err != TW_START || err != TW_REP_START)
-            set_low(PORTD, 2);
-        else
-            set_high(PORTD, 2);
-
-        if (err != TW_MT_SLA_ACK)
-            set_low(PORTD, 3);
-        else
-            set_high(PORTD, 3);
-    } else {
-        set_high(PORTD, 2);
-        set_high(PORTD, 3);
-    }*/
-
 /*
  * P0->RS
  * P1->RW
@@ -66,65 +150,58 @@ int main(void) {
 
     _delay_ms(5);
 
-    display_first_line(d);
-    display_put_char(d, 'A');
-    display_put_char(d, '0');
-    display_put_char(d, ':');
-
-    display_second_line(d);
-    display_put_char(d, 'A');
-    display_put_char(d, '1');
-    display_put_char(d, ':');
-
     float c = 0.0;
     float dc = 0.03;
 
-    float d3 = 0.0;
-    float d5 = 85.0;
-    float d6 = 170.0;
-    float dd3 = dc* 10;
-    float dd5 = dc* 10;
-    float dd6 = dc* 10;
+    float blink_period = 1.0;
+    float blink_timer = -blink_period;
+    float blick_delta = 0.05;
 
+    char str_buffer[20];
     for (;;) {
+        float x = ((float)analog_read(0) / 1023.0f) * 5.0;
+        float y = ((float)analog_read(1) / 1023.0f) * 5.0;
+
         int pressed = (~get_bit(PIND, PIND2)) & 1;
+
+        int pressed_ = (~get_bit(PIND, PIND4)) & 1;
+        //Father forgive me for I have sinned
+        //This is always false, since DDRD<<PIND4 is set to HIGH.
+        //We just need this for the compiler to not optimize out
+        //our symbols, for using with nm after.
+        if (pressed_) {
+            uint16_t bit_field = (uint16_t)&__bss_start;
+            bit_field = (uint16_t)&__bss_end;
+            bit_field = (uint16_t)&__heap_start;
+            bit_field = (uint16_t)&__heap_end;
+            bit_field = (uint16_t)&__data_start;
+            bit_field = (uint16_t)&__data_end;
+            bit_field += 1;
+        }
+
         display_first_line(d);
-        display_cursor_right(d, 3);
-        int x = analog_read(0);
-        for (unsigned int i = 10; i-->0;)
-            display_put_char(d, ((x >> i) & 1)? '1': '0');
+        int sz = snprintf(str_buffer, 19, "Vx: %02.5f", x);
+        display_put_cstr(d, str_buffer, sz);
 
         display_second_line(d);
-        display_cursor_right(d, 3);
-        int y = analog_read(1);
-        for (unsigned int i = 10; i-->0;)
-            display_put_char(d, ((y >> i) & 1)? '1': '0');
+        sz = snprintf(str_buffer, 19, "Vy: %02.5f", y);
+        display_put_cstr(d, str_buffer, sz);
 
         display_first_line(d);
         display_cursor_right(d, 3 + 10 + 2);
-        display_put_char(d, (~pressed) & 1? '1': '0');
+        display_put_char(d, pressed? '1': '0');
 
-        analog_write_PORTB1(d3);
-        analog_write_PORTB2(d5);
-        analog_write_PORTB3(d6);
+        analog_write_PORTD3(x / 5.0f * 255.f);
+        analog_write_PORTD5(y / 5.0f * 255.f);
 
-        analog_write_PORTD3(d3);
-        analog_write_PORTD5(d5);
-        analog_write_PORTD6(d6);
+        if (blink_timer <= 0)
+            analog_write_PORTD6(255);
+        else
+            analog_write_PORTD6(0);
 
-        d3 += dd3;
-        d5 += dd5;
-        d6 += dd6;
-
-        if (d3 <= 0 || d3 >= 256)
-            d3 = 0;
-
-        if (d5 <= 0 || d5 >= 256)
-            d5 = 0;
-
-        if (d6 <= 0 || d6 >= 256)
-            d6 = 0;
-
+        blink_timer += blick_delta;
+        if (blink_timer >= blink_period)
+            blink_timer = -blink_period;
 
         display_second_line(d);
         display_cursor_right(d, 3 + 10 + 2);

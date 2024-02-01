@@ -9,7 +9,7 @@ unsigned int analog_read(int i) {
 
     unsigned int low = ADCL;
     unsigned int high = ADCH;
-    set_high(ADCSRA, ADSC); //(?)
+//    set_high(ADCSRA, ADSC); //(?)
     return low | (high << 8);
 }
 
