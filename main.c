@@ -21,7 +21,7 @@ extern uint16_t __heap_start; //Should be equal to __bss_start
 /*
  * All information regarding memory can be seen on the chip datasheet.
  * We are using an ATMega328P. From the datasheet (pages 17 and 18)
- * |________________________________| (0x0000)
+ * |--------------------------------| (0x0000)
  * |                                |
  * |                                |
  * |           Application          |
@@ -29,29 +29,29 @@ extern uint16_t __heap_start; //Should be equal to __bss_start
  * |            Section             |
  * |                                |
  * |                                |
- * |________________________________|
+ * |--------------------------------|
  * |                                |
  * |             Boot Area          |
  * |     (We do not touch this      |
  * |      frequently, but can       |
  * |      be touched if done        |
  * |      the right way)            |
- * |________________________________| (0x3fff)
+ * |--------------------------------| (0x3fff)
  *
  * This is the entire memory layout. We use the Flash Section
  * for registers, .data section, .bss section, heap(dynamic memory) and stack.
  *
  * The Flash Section (Data Memory) is divided following:
- * |________________________________| (0x0000)
+ * |--------------------------------| (0x0000)
  * |                                |
  * |           32 Registers         |
- * |________________________________| (0x0020 >)
+ * |--------------------------------| (0x0020 >)
  * |                                |
  * |         64 I/O Registers       |
- * |________________________________| (0x0060 >)
+ * |--------------------------------| (0x0060 >)
  * |                                |
  * |      160 Ext I/O Registers     |
- * |________________________________| (0x0100 >)
+ * |--------------------------------| (0x0100 >)
  * |                                |
  * |                                |
  * |                                |
@@ -60,7 +60,7 @@ extern uint16_t __heap_start; //Should be equal to __bss_start
  * |                                |
  * |                                |
  * |                                |
- * |________________________________| (0x08ff)
+ * |--------------------------------| (0x08ff)
  * 
  * Our precious data lives on the Internal SRAM section.
  * The sections above are register sections. You can see
