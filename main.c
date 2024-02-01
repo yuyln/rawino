@@ -83,16 +83,16 @@ extern uint16_t __heap_start; //Should be equal to __bss_start
  * |________________________________| (0x08ff)
  * 
  * Our precious data lives on the Internal SRAM section.
- * The section above are register sections. You can see
+ * The sections above are register sections. You can see
  * that the registers addresses goes up to 0xff. If you
  * go to the Register Summary on the datasheet, you will
  * see that this is the range of all addresses on the device.
  *
  * The Internal SRAM is where the juicy stuff lives.
- * This regions is divided into section: .data, .bss, and the rest.
+ * This region is divided into sections: .data, .bss, and the rest.
  * The .data section start at 0x0100 and all our program data lives
  * there, (const char * for example). This section starts at __data_start location
- * and ends on __data_end. Note, these are LOCATIONS, not addresses, you
+ * and ends at __data_end. Note, these are LOCATIONS, not addresses, you
  * need to use &__data_xx to get the location correctly (and keep your sanity).
  *
  * The .bss section is where the static variables lives. Things
@@ -104,24 +104,27 @@ extern uint16_t __heap_start; //Should be equal to __bss_start
  * whatever we want with this. BUT, there is a catch: The stack pointer
  * starts at 0x08ff(location __stack, same deal as with __bss_xx and __data_xx),
  * which is the end of the SRAM. From the datasheet, the
- * stack pointer goes up, i.e., the stack pointer reduces it address and variables
- * are pushed into it. This way, you have the space on SRAM starting at __bss_end
- * up until the Stack Pointer. CAREFUL: DO NOT OVERWRITE THE STACK ON ANY CIRCUNSTANCE,
- * THIS WILL FUCK UP EVERYTHING (if using the stack, obviusly).
+ * stack pointer goes up, i.e., the stack pointer reduces it address as push
+ * operations are performed, and increases it address as pop operations are
+ * performed. This way, you have the space on SRAM starting at __bss_end
+ * up until the Stack Pointer do to whatever you want.
+ * CAREFUL: DO NOT OVERWRITE THE STACK ON ANY CIRCUNSTANCE,
+ * THIS WILL FUCK UP EVERYTHING (if using the stack, obviusly)
+ * (check https://www.youtube.com/watch?v=xBjQVxVxOxc for a pratical example of
+ * stack corruption).
  *
- * And there we go, this is the entire memory layout of the ATMega328P chip.
- * On the file `symbols`, are a list of symbols used on the main program.
+ * And there we go, this is the entire memory layout of the ATMega328P.
+ * On the file `symbols`, there is a list of symbols used on the main program (gotten via avr-nm).
  * There you will find __bss_start, __bss_end, __data_start, __data_end and __stack.
  * Check their values and see that it matches what is said on the datasheet.
- * On `symbols`
  *
  * OBS: ">" means that this address is exclusive, and belong to the next section.
- *  So the section existis up until this address, from this address beyond
- *  it is other region. This is different from what is on the datasheet, but
- *  it is really easy to find the address on the datasheet, just
- *  subtract 0x01 from the address(1 byte). For example, for going from
+ *  So the section exists up until this address, from this address beyond
+ *  it is other region. This is different from what is in the datasheet, but
+ *  it is really easy to find the address as in the datasheet, just
+ *  subtract 0x01 from the address. For example, for going from
  *  the 64 I/O Registers address used here, just subtract 0x01 from 0x0060,
- *  which gives 0x005f, giving the addrees range [0x0020, 0x005F], equal
+ *  resulting 0x005f, giving the addrees range [0x0020, 0x005F], equal
  *  to the datasheet.
  */
 
