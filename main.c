@@ -20,19 +20,22 @@ extern uint16_t __bss_end;
 
 static uint8_t servo_can_update = 0;
 static uint16_t servo_value = SERVO_MIN;
+static uint8_t servo_is_high = 1;
 
 ISR(TIMER1_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
-    OCR1A = OCR1B + servo_value;
-    set_low(PORTB, PORTB0);
-}
-
-ISR(TIMER1_COMPB_vect) {
-    servo_can_update = 1;
-    OCR1B += PWM_TOP;
-    set_high(PORTB, PORTB0);
+    if (servo_is_high) {
+        servo_is_high = 0;
+        OCR1A += PWM_TOP - servo_value;
+        set_low(PORTB, PORTB0);
+    } else {
+        servo_is_high = 1;
+        servo_can_update = 1;
+        OCR1A += servo_value;
+        set_high(PORTB, PORTB0);
+    }
 }
 
 void servo_set(float angle) {
@@ -47,13 +50,11 @@ void servo_set(float angle) {
 int main(void) {
     DDRB |= (1 << DDB0);
 
-    TIMSK1 = (1 << OCIE1B) | (1 << OCIE1A) | (1 << TOIE1);
+    TIMSK1 = (1 << OCIE1A) | (1 << TOIE1);
     TCCR1A = 0;
     TCCR1B = (1 << CS12);
 
     OCR1A = SERVO_MIN;
-    OCR1B = PWM_TOP;
-
     sei();
 
     display d = {0};;
@@ -62,7 +63,7 @@ int main(void) {
 
 
     float angle = 0.0;
-    float d_angle = M_PI;
+    float d_angle = M_PI / 2.0;
     char buffer[20];
     uint16_t start = TCNT1;
 
