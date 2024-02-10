@@ -38,6 +38,7 @@
 #else
 #define F_CPU 16000000
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <util/twi.h>
 #include <util/delay.h>
 #endif
@@ -49,5 +50,7 @@
 //#define get_bit(PIN, BIT) ((PIN) & (1 << (BIT)))
 #define get_bit(PIN, BIT) (((PIN) >> (BIT)) & 1)
 //void light_pins(int v);
+#define SIGN(x) ((x)>=0? 1.0: -1.0)
+#define M_PI 3.14
 
 #endif
