@@ -26,7 +26,12 @@ ISR(TIMER1_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
-    if (servo_is_high) {
+    OCR1A += (servo_is_high) * PWM_TOP + (-1 + 2 * (!servo_is_high)) * servo_value;
+    PORTB ^= 1 << PORTB0;
+    servo_can_update = !servo_is_high;
+    servo_is_high = !servo_is_high;
+
+    /*if (servo_is_high) {
         servo_is_high = 0;
         OCR1A += PWM_TOP - servo_value;
         set_low(PORTB, PORTB0);
@@ -35,7 +40,7 @@ ISR(TIMER1_COMPA_vect) {
         servo_can_update = 1;
         OCR1A += servo_value;
         set_high(PORTB, PORTB0);
-    }
+    }*/
 }
 
 void servo_set(float angle) {
@@ -49,6 +54,7 @@ void servo_set(float angle) {
 
 int main(void) {
     DDRB |= (1 << DDB0);
+    set_high(PORTB, PORTB0);
 
     TIMSK1 = (1 << OCIE1A) | (1 << TOIE1);
     TCCR1A = 0;
@@ -71,12 +77,12 @@ int main(void) {
     uint16_t frames = 0;
 
     float fps_interval = 1;
-    float fps_timer = -fps_interval;
+    float fps_timer = 0;
 
     for (;;) {
         if (fps_timer >= 0) {
             display_first_line(d);
-            int sz = snprintf(buffer, 19, "dt: %.5e ms", (fps_interval + fps_timer) * 1000.f / (float)frames);
+            int sz = snprintf(buffer, 19, "dt: %.3e ms", (fps_interval + fps_timer) * 1000.f / (float)frames);
             display_put_cstr(d, buffer, sz);
             frames = 0;
             fps_timer = -fps_interval;
