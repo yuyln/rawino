@@ -9,7 +9,7 @@
 extern uint16_t __bss_end;
 
 //Considering clock/256
-#define N 256
+#define N 64
 #define SERVO_FREQ 50
 #define PWM_FREQ SERVO_FREQ
 #define PWM_TOP ((uint16_t)(((F_CPU - N * PWM_FREQ) / (N * PWM_FREQ))))
@@ -44,10 +44,6 @@ ISR(TIMER1_COMPA_vect) {
 }
 
 void servo_set(float angle) {
-    if (!servo_can_update) {
-        servo_can_update = 0;
-        return;
-    }
     float t = angle / M_PI;
     servo_value = (uint16_t)((SERVO_MAX - SERVO_MIN) * t + SERVO_MIN);
 }
@@ -58,12 +54,12 @@ int main(void) {
 
     TIMSK1 = (1 << OCIE1A) | (1 << TOIE1);
     TCCR1A = 0;
-    TCCR1B = (1 << CS12);
+    TCCR1B = (1 << CS11) | (1 << CS10);
 
     OCR1A = SERVO_MIN;
     sei();
 
-    display d = {0};;
+    display d = {0};
     _delay_ms(100);
     int err = display_init(&d, 0x4e, 2, 3, 0, 1, 7, 6, 5, 4);
 
@@ -71,7 +67,6 @@ int main(void) {
     float angle = 0.0;
     float d_angle = M_PI / 2.0;
     char buffer[20];
-    uint16_t start = TCNT1;
 
     float dt = 0;
     uint16_t frames = 0;
@@ -80,6 +75,7 @@ int main(void) {
     float fps_timer = 0;
 
     for (;;) {
+        uint16_t start = TCNT1;
         if (fps_timer >= 0) {
             display_first_line(d);
             int sz = snprintf(buffer, 19, "dt: %.3e ms", (fps_interval + fps_timer) * 1000.f / (float)frames);
@@ -100,16 +96,12 @@ int main(void) {
             d_angle = -d_angle;
         }
 
-        uint16_t end = TCNT1;
         frames++;
         fps_timer += dt;
-        if (end < start) {
-            dt = 0;
-            start = end;
-            continue;
-        }
+        uint16_t end = TCNT1;
         dt = (end - start) / (float)(F_CPU / N);
-        start = end;
+        if (end < start)
+            dt = 0;
     }
     return 0;
 

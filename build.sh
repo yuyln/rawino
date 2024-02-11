@@ -1,6 +1,6 @@
 #!/bin/sh
 set -xe
-CFLAGS="-O0 -Wall -Wextra -g -ggdb"
+CFLAGS="-O3 -Wall -Wextra -g -ggdb"
 CLIBS="-Wl,-u,vfprintf -lprintf_flt"
 CC="avr-gcc"
 MCU="atmega328p"
